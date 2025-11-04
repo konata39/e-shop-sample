@@ -39,7 +39,10 @@
 <section class="py-5">
   <div class="container">
     <h2 class="h3 fw-bold mb-4 text-center text-lg-start">熱門商品</h2>
-    <div class="row g-4">
+    <div v-if="store.state.loading" class="text-center text-muted py-5">商品載入中...</div>
+    <div v-else-if="store.state.error" class="alert alert-danger" role="alert">{{ store.state.error }}</div>
+    <div v-else-if="!demoProducts.length" class="text-center text-muted py-5">目前沒有商品。</div>
+    <div v-else class="row g-4">
       <div class="col-12 col-sm-6 col-lg-3" v-for="p in demoProducts" :key="p.id">
         <ProductCard v-bind="p" @preview="onPreview(p)" />
       </div>
@@ -51,12 +54,18 @@
 
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import ProductCard from '../components/ProductCard.vue'
 import ProductModal from '../components/ProductModal.vue'
-import { products } from '../data/products'
+import productStore from '../stores/productStore'
 
-const demoProducts = computed(() => products.slice(0, 4))
+const store = productStore
+
+onMounted(() => {
+  store.fetchProducts()
+})
+
+const demoProducts = computed(() => store.products.value.slice(0, 4))
 const selected = ref(null)
 
 function onPreview(p) {
