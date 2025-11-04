@@ -48,6 +48,46 @@ This project is a Vue 3 + Vite storefront that consumes product data from a Node
 > The backend uses Express with a RESTful JSON API that serves both product and category data.  
 > Routes include ```/api/products``` and ```/api/categories```.
 
+---
+
+## Manual Database Initialization
+
+If you prefer to initialize the database manually (instead of automatic setup),  
+you can use the SQL script located at:
+
+**server/sql/init.sql**
+
+---
+
+### Load the SQL manually (MySQL command line)
+
+#### Option 1: Using MySQL command line
+```bash
+mysql -u root -p < server/sql/init.sql
+```
+(Enter your MySQL password when prompted)
+
+#### Option 2: From within MySQL CLI
+```bash
+mysql -u root -p
+mysql> source server/sql/init.sql;
+```
+
+#### Option 3: Using Windows Terminal (PowerShell or CMD)
+```bash
+cd path\to\e-shop
+mysql -u root -p < .\server\sql\init.sql
+```
+
+Once imported, you can verify with:
+```sql
+SHOW DATABASES;
+USE eshop;
+SHOW TABLES;
+```
+
+---
+
 ## Frontend setup (Vue 3 + Vite)
 
 1. Install dependencies:
@@ -75,6 +115,8 @@ This project is a Vue 3 + Vite storefront that consumes product data from a Node
    - Build the frontend
    - Serve it along with the backend API at ```http://127.0.0.1:1346```
 
+---
+
 ## Environment configuration
 
 If you need to override the API base URL for the frontend, create a ```.env``` file in the project root:
@@ -84,6 +126,8 @@ VITE_PRODUCTS_API=http://127.0.0.1:1346/api/products
 ```
 
 Restart the Vite dev server after changing environment variables.
+
+---
 
 ## API Overview
 
@@ -96,6 +140,8 @@ Restart the Vite dev server after changing environment variables.
 | DELETE | ```/api/products/:id``` | Delete a product |
 | GET | ```/api/categories``` | Retrieve all categories |
 
+---
+
 ## Project scripts
 
 | Command | Description |
@@ -105,9 +151,12 @@ Restart the Vite dev server after changing environment variables.
 | ```npm run build``` | Build the frontend for production |
 | ```npm run start``` | Build and serve both frontend and backend together |
 
+---
+
 ## Notes
 
 - The backend listens on **port 1346**
 - The frontend (Vite) runs on **port 5173**
 - MySQL should be running locally on **port 3306**
 - The backend automatically initializes and populates the ```eshop``` database if it does not exist
+- You can also initialize the database manually using the provided SQL script under ```server/sql/init.sql```
