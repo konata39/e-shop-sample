@@ -1,31 +1,52 @@
 # E-Shop Sample
 
-This project is a Vue 3 + Vite storefront that consumes product data from a Strapi headless CMS.
+This project is a Vue 3 + Vite storefront that consumes product data from a Node.js + MySQL backend.
 
 ## Prerequisites
 
 - Node.js 18+
 - npm 8+
-- A running Strapi instance available at `http://localhost:1337`
+- MySQL 8+
 
-## Backend setup (Strapi)
+## Backend setup (Node.js + MySQL)
 
-1. Create a Strapi project (or reuse the existing one) that will serve product data:
-   ```bash
-   npx create-strapi-app@latest backend --quickstart
+1. Create a ```.env``` file in the project root to configure your database connection and backend port:
+
    ```
+   PORT=1346
+   MYSQL_HOST=localhost
+   MYSQL_PORT=3306
+   MYSQL_USER=root
+   MYSQL_PASSWORD=admin
+   MYSQL_DATABASE=eshop
+   MYSQL_CONNECTION_LIMIT=10
+   ```
+
 2. Install project dependencies:
    ```bash
-   cd backend
    npm install
    ```
-3. Start Strapi in development mode so the API is reachable at `http://localhost:1337`:
-   ```bash
-   npm run develop
-   ```
-4. Import the provided catalog data archive (`XXX.tar.gz.enc`) through the Strapi admin panel's import feature so that the products populate the database.
 
-> **Note:** The frontend expects the `/api/products` endpoint to be available. If your Strapi project is not running at the default host/port, update the frontend configuration accordingly.
+3. Initialize and start the backend server:
+   ```bash
+   npm run server
+   ```
+   The server will:
+   - Automatically create the ```eshop``` database if it does not exist
+   - Create the ```categories``` and ```products``` tables
+   - Insert sample products (cups, badges, shirts)
+
+   Once started, the API will be available at ```http://127.0.0.1:1346/api/products```.
+
+4. Verify the backend:
+   ```bash
+   curl http://127.0.0.1:1346/api/products
+   ```
+   You should receive a JSON response containing sample product data.
+
+> **Note:**  
+> The backend uses Express with a RESTful JSON API that serves both product and category data.  
+> Routes include ```/api/products``` and ```/api/categories```.
 
 ## Frontend setup (Vue 3 + Vite)
 
@@ -33,21 +54,60 @@ This project is a Vue 3 + Vite storefront that consumes product data from a Stra
    ```bash
    npm install
    ```
+
 2. Run the development server:
    ```bash
    npm run dev
    ```
+
+   The Vite dev server runs at ```http://localhost:5173``` and proxies all ```/api``` requests to the backend (```http://127.0.0.1:1346```).
+
 3. Build for production:
    ```bash
    npm run build
    ```
 
+4. Serve the built app with the integrated Express server:
+   ```bash
+   npm run start
+   ```
+   This will:
+   - Build the frontend
+   - Serve it along with the backend API at ```http://127.0.0.1:1346```
+
 ## Environment configuration
 
-Create a `.env` file if you need to override the API base URL:
+If you need to override the API base URL for the frontend, create a ```.env``` file in the project root:
 
 ```
-VITE_API_BASE_URL=http://localhost:1337
+VITE_PRODUCTS_API=http://127.0.0.1:1346/api/products
 ```
 
 Restart the Vite dev server after changing environment variables.
+
+## API Overview
+
+| Method | Endpoint | Description |
+|--------|-----------|-------------|
+| GET | ```/api/products``` | Retrieve all products |
+| GET | ```/api/products/:id``` | Retrieve a single product |
+| POST | ```/api/products``` | Create a new product |
+| PUT | ```/api/products/:id``` | Update an existing product |
+| DELETE | ```/api/products/:id``` | Delete a product |
+| GET | ```/api/categories``` | Retrieve all categories |
+
+## Project scripts
+
+| Command | Description |
+|----------|-------------|
+| ```npm run dev``` | Run the Vite dev server (frontend only) |
+| ```npm run server``` | Start the Express backend (API + MySQL) |
+| ```npm run build``` | Build the frontend for production |
+| ```npm run start``` | Build and serve both frontend and backend together |
+
+## Notes
+
+- The backend listens on **port 1346**
+- The frontend (Vite) runs on **port 5173**
+- MySQL should be running locally on **port 3306**
+- The backend automatically initializes and populates the ```eshop``` database if it does not exist
