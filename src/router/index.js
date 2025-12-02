@@ -3,12 +3,13 @@ import Home from '../pages/Home.vue'
 import Shop from '../pages/Shop.vue'
 import Cart from '../pages/Cart.vue'
 import About from '../pages/About.vue'
-
+import News from '../pages/News.vue'
 
 const routes = [
 { path: '/', name: 'home', component: Home },
 { path: '/shop', name: 'shop', component: Shop },
 { path: '/cart', name: 'cart', component: Cart },
+{ path: '/news', name: 'news', component: News },
 { path: '/about', name: 'about', component: About },
 ]
 

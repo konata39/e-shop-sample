@@ -160,3 +160,11 @@ Restart the Vite dev server after changing environment variables.
 - MySQL should be running locally on **port 3306**
 - The backend automatically initializes and populates the ```eshop``` database if it does not exist
 - You can also initialize the database manually using the provided SQL script under ```server/sql/init.sql```
+
+TBD:
+購物車+數字
+最新消息+TAB
+資料用js fetch。生成用vue
+最新消息用dialgo
+
+錯誤訊息
