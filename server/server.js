@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url'
 import express from 'express'
 import cors from 'cors'
 import mysql from 'mysql2/promise'
+import crypto from 'crypto'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -24,6 +25,100 @@ const pool = mysql.createPool({
   waitForConnections: true,
   connectionLimit: Number(process.env.MYSQL_CONNECTION_LIMIT ?? 10),
   queueLimit: 0
+})
+
+// ---- user auth utils ----
+function hashPassword(password) {
+  const salt = crypto.randomBytes(16).toString('hex')
+  const derivedKey = crypto.scryptSync(password, salt, 64)
+  return `${salt}:${derivedKey.toString('hex')}`
+}
+
+function verifyPassword(password, storedHash) {
+  if (!password || !storedHash) return false
+  const [salt, key] = storedHash.split(':')
+  if (!salt || !key) return false
+
+  const derived = crypto.scryptSync(password, salt, 64)
+  const storedBuffer = Buffer.from(key, 'hex')
+  if (storedBuffer.length !== derived.length) return false
+
+  return crypto.timingSafeEqual(storedBuffer, derived)
+}
+
+async function ensureUsersTable() {
+  const createSQL = `
+    CREATE TABLE IF NOT EXISTS users (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      email VARCHAR(255) NOT NULL UNIQUE,
+      name VARCHAR(100) NOT NULL,
+      password_hash VARCHAR(255) NOT NULL,
+      role ENUM('admin', 'user') NOT NULL DEFAULT 'user',
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  `
+  await pool.query(createSQL)
+}
+
+async function upsertDefaultUsers() {
+  const defaults = [
+    {
+      email: process.env.ADMIN_EMAIL ?? 'admin@example.com',
+      name: process.env.ADMIN_NAME ?? '管理員',
+      password: process.env.ADMIN_PASSWORD ?? 'admin1234',
+      role: 'admin'
+    },
+    {
+      email: process.env.USER_EMAIL ?? 'user@example.com',
+      name: process.env.USER_NAME ?? '一般會員',
+      password: process.env.USER_PASSWORD ?? 'user1234',
+      role: 'user'
+    }
+  ]
+
+  for (const user of defaults) {
+    const password_hash = hashPassword(user.password)
+    await pool.query(
+      `
+        INSERT INTO users (email, name, password_hash, role)
+        VALUES (?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE
+          name = VALUES(name),
+          password_hash = VALUES(password_hash),
+          role = VALUES(role)
+      `,
+      [user.email, user.name, password_hash, user.role]
+    )
+  }
+}
+
+await ensureUsersTable()
+await upsertDefaultUsers()
+
+// ===================== Auth =====================
+
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { email, password } = req.body || {}
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email 與密碼為必填' })
+    }
+
+    const [rows] = await pool.query(
+      'SELECT id, email, name, password_hash, role FROM users WHERE email = ? LIMIT 1',
+      [email]
+    )
+
+    if (!rows.length) return res.status(401).json({ error: '帳號或密碼錯誤' })
+
+    const user = rows[0]
+    const isValid = verifyPassword(password, user.password_hash)
+    if (!isValid) return res.status(401).json({ error: '帳號或密碼錯誤' })
+
+    res.json({ user: { id: user.id, email: user.email, name: user.name, role: user.role } })
+  } catch (err) {
+    res.status(500).json({ error: String(err.message || err) })
+  }
 })
 
 // ---- util: 以 slug 取得/建立 category ----
@@ -56,6 +151,24 @@ async function ensureCategoryId({ category_id, category_slug, category_name }) {
 app.get('/api/categories', async (_req, res) => {
   try {
     const [rows] = await pool.query('SELECT id, slug, name, created_at FROM categories ORDER BY id ASC')
+    res.json({ data: rows })
+  } catch (err) {
+    res.status(500).json({ error: String(err.message || err) })
+  }
+})
+
+// ===================== News =====================
+
+app.get('/api/news', async (req, res) => {
+  try {
+    const requestedLimit = Number(req.query.limit ?? 20)
+    const limit = Number.isFinite(requestedLimit) && requestedLimit > 0 ? Math.min(requestedLimit, 50) : 20
+
+    const [rows] = await pool.query(
+      'SELECT id, title, summary, created_at FROM news ORDER BY created_at DESC, id DESC LIMIT ?',
+      [limit]
+    )
+
     res.json({ data: rows })
   } catch (err) {
     res.status(500).json({ error: String(err.message || err) })

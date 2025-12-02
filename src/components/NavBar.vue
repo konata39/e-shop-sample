@@ -19,10 +19,31 @@ aria-label="Toggle navigation"
 <ul class="navbar-nav me-auto mb-2 mb-lg-0">
 <li class="nav-item"><RouterLink class="nav-link" to="/">首頁</RouterLink></li>
 <li class="nav-item"><RouterLink class="nav-link" to="/shop">商店</RouterLink></li>
+<li class="nav-item"><RouterLink class="nav-link" to="/news">最新消息</RouterLink></li>
 <li class="nav-item"><RouterLink class="nav-link" to="/about">關於我</RouterLink></li>
 </ul>
 <div class="d-flex align-items-center gap-3">
-<button class="btn btn-outline-secondary d-none d-lg-inline" data-bs-toggle="modal" data-bs-target="#loginModal">會員登入</button>
+<div v-if="auth.isAuthenticated.value" class="text-end d-none d-lg-block">
+  <div class="fw-semibold">{{ auth.state.user.name }}</div>
+  <div class="small text-muted">{{ auth.roleLabel.value }}</div>
+</div>
+<button
+  v-if="auth.isAuthenticated.value"
+  class="btn btn-outline-secondary"
+  type="button"
+  @click="auth.logout"
+>
+  登出
+</button>
+<button
+  v-else
+  class="btn btn-outline-secondary"
+  data-bs-toggle="modal"
+  data-bs-target="#loginModal"
+  type="button"
+>
+  會員登入
+</button>
 <RouterLink class="btn btn-primary position-relative" to="/cart">
 購物車
 <span v-if="cart.count" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">{{ cart.count }}</span>
@@ -36,6 +57,7 @@ aria-label="Toggle navigation"
 
 <script setup>
 import { RouterLink } from 'vue-router'
+import auth from '../stores/authStore'
 import cart from '../stores/cartStore'
 </script>
 

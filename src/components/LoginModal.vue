@@ -16,7 +16,12 @@
 <label class="form-label">密碼</label>
 <input v-model="password" type="password" class="form-control" required />
 </div>
-<button class="btn btn-primary w-100" type="submit">登入</button>
+<div v-if="errorMessage" class="alert alert-danger" role="alert">
+  {{ errorMessage }}
+</div>
+<button class="btn btn-primary w-100" type="submit" :disabled="isLoading">
+  {{ isLoading ? '驗證中...' : '登入' }}
+</button>
 </form>
 </div>
 </div>
@@ -26,15 +31,29 @@
 
 
 <script setup>
-import { ref } from 'vue'
-
+import { computed, onMounted, ref } from 'vue'
+import auth from '../stores/authStore'
 
 const email = ref('')
 const password = ref('')
+const isLoading = computed(() => auth.state.loading)
+const errorMessage = computed(() => auth.state.error)
+let modalInstance = null
 
+onMounted(() => {
+  const modalEl = document.getElementById('loginModal')
+  if (modalEl && window.bootstrap?.Modal) {
+    modalInstance = window.bootstrap.Modal.getOrCreateInstance(modalEl)
+  }
+})
 
-function onSubmit() {
-// 先行示意：實務上改由 API 與後端串接
-alert(`登入成功：${email.value}`)
+async function onSubmit() {
+  try {
+    await auth.login(email.value, password.value)
+    password.value = ''
+    modalInstance?.hide()
+  } catch (err) {
+    // error handled by store
+  }
 }
 </script>
